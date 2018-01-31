@@ -18,9 +18,6 @@
 
 #import <XCTest/XCTest.h>
 
-// FIXME: Many permission tests appears to fail with the ROS 3.0.0 alpha releases.
-#if 0
-
 #import "RLMSyncTestCase.h"
 
 #import "RLMTestUtils.h"
@@ -115,7 +112,7 @@ static NSURL *makeTildeSubstitutedURL(NSURL *url, RLMSyncUser *user) {
             [ex fulfill];
         }
     }];
-    [self waitForExpectationsWithTimeout:2.0 handler:^(NSError *error) {
+    [self waitForExpectationsWithTimeout:5.0 handler:^(NSError *error) {
         if (error) {
             NSLog(@"Timed out. The final state of the permissions is %@; the desired permission was %@",
                   results, permission);
@@ -596,7 +593,9 @@ static NSURL *makeTildeSubstitutedURL(NSURL *url, RLMSyncUser *user) {
     // Check getting permission by its index.
     NSUInteger index = [results indexOfObject:p];
     XCTAssertNotEqual(index, NSNotFound);
-    XCTAssertEqualObjects(p, [results objectAtIndex:index]);
+    if (index != NSNotFound) {
+        XCTAssertEqualObjects(p, [results objectAtIndex:index]);
+    }
 }
 
 /// Deleting a permission should work.
@@ -1195,5 +1194,3 @@ static NSURL *makeTildeSubstitutedURL(NSURL *url, RLMSyncUser *user) {
 }
 
 @end
-
-#endif

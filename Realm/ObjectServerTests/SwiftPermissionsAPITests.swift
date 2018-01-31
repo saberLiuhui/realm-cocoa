@@ -77,7 +77,7 @@ class SwiftPermissionsAPITests: SwiftSyncTestCase {
                 return
             }
         }
-        waitForExpectations(timeout: 2.0, handler: nil)
+        waitForExpectations(timeout: 5.0, handler: nil)
         token.invalidate()
         return finalValue
     }
@@ -145,23 +145,17 @@ class SwiftPermissionsAPITests: SwiftSyncTestCase {
         }
         waitForExpectations(timeout: 2.0, handler: nil)
 
-        // Now retrieve the permissions again and make sure the new permission is properly set.
-        let ex3 = expectation(description: "One permission in results after setting the permission.")
-        userB.retrievePermissions { (r, error) in
-            XCTAssertNil(error)
-            XCTAssertNotNil(r)
-            results = r
-            ex3.fulfill()
-        }
-        waitForExpectations(timeout: 2.0, handler: nil)
-        // Expected permission: applies to user B, but for user A's Realm.
+        // The permission should now eventualy appear in user B's permissions
         let finalValue = get(permission: p, from: results)
         XCTAssertNotNil(finalValue, "Did not find the permission \(p)")
 
         // Check getting permission by its index.
-        let index = results.index(of: p)
-        XCTAssertNotNil(index)
-        XCTAssertTrue(p == results[index!])
+        if let index = results.index(of: p) {
+            XCTAssertTrue(p == results[index])
+        }
+        else {
+            XCTFail("Did not find the permission \(p) in \(results)")
+        }
     }
 
     /// Observing permission changes should work.

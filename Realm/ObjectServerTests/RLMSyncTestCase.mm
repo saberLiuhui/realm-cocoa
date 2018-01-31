@@ -199,7 +199,10 @@ static NSURL *syncDirectoryForChildProcess() {
                         ];
     // Need to set the environment variables to bypass the mandatory email prompt.
     _task.environment = @{@"ROS_TOS_EMAIL_ADDRESS": @"ci@realm.io",
-                          @"DOCKER_DATA_PATH": @"/tmp"};
+                          @"DOCKER_DATA_PATH": @"/tmp",
+                          // We don't care about the durability of our test data and this
+                          // significantly speeds up the tests
+                          @"REALM_DISABLE_SYNC_TO_DISK": @"true"};
 
     _task.standardOutput = pipe;
     _task.standardError = pipe;
