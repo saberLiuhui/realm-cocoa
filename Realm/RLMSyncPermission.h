@@ -65,12 +65,27 @@ NS_ASSUME_NONNULL_BEGIN
 /// This field is only applicable to Permissions attached to Classes, and not
 /// to Realms or Objects.
 @property (nonatomic) bool canCreate;
-    /// Whether the user can modify the schema of the Realm which this
-    /// Permission is attached to.
-    ///
-    /// This field is only applicable to Permissions attached to Realms, and not
-    /// to Realms or Objects.
+/// Whether the user can modify the schema of the Realm which this
+/// Permission is attached to.
+///
+/// This field is only applicable to Permissions attached to Realms, and not
+/// to Realms or Objects.
 @property (nonatomic) bool canModifySchema;
+
+/// Get the Permission object for the role in the permissions array, creating
+/// and adding it if needed.
+///
+/// Each array of Permission objects can contain at most one Permission object
+/// for each Role. This method searches the array for an existing Permission
+/// for the Role and returns it if it is present, and creates a new one in the
+/// array if none is found.
++ (RLMPermission *)permissionForRole:(RLMPermissionRole *)role inArray:(RLMArray<RLMPermission *><RLMPermission> *)array;
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName inArray:(RLMArray<RLMPermission *><RLMPermission> *)array;
+
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName onRealm:(RLMRealm *)realm;
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName onClass:(Class)cls realm:(RLMRealm *)realm;
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName onClassNamed:(NSString *)className realm:(RLMRealm *)realm;
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName onObject:(RLMObject *)object;
 @end
 
 /**

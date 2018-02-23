@@ -19,12 +19,22 @@
 #import "RLMSyncPermission_Private.hpp"
 
 #import "RLMArray.h"
+#import "RLMObjectSchema.h"
 #import "RLMSyncUtil_Private.hpp"
 #import "RLMUtil.hpp"
 
 using namespace realm;
 
 using ConditionType = Permission::Condition::Type;
+
+static void verifyInWriteTransaction(__unsafe_unretained RLMRealm *const realm, SEL sel) {
+    if (!realm) {
+        @throw RLMException(@"Cannot call %@ on an unmanaged object.", NSStringFromSelector(sel));
+    }
+    if (!realm.inWriteTransaction) {
+        @throw RLMException(@"Cannot call %@ outside of a write transaction.", NSStringFromSelector(sel));
+    }
+}
 
 @implementation RLMPermissionRole
 + (NSString *)_realmObjectName {
@@ -59,6 +69,7 @@ using ConditionType = Permission::Condition::Type;
 }
 
 + (RLMPermissionUser *)userInRealm:(RLMRealm *)realm withIdentity:(NSString *)identity {
+    verifyInWriteTransaction(realm, _cmd);
     if (id user = [self objectInRealm:realm forPrimaryKey:identity]) {
         return user;
     }
@@ -81,6 +92,54 @@ using ConditionType = Permission::Condition::Type;
              @"canQuery": @NO,
              @"canCreate": @NO,
              @"canModifySchema": @NO};
+}
+
++ (RLMPermission *)permissionForRole:(RLMPermissionRole *)role inArray:(RLMArray<RLMPermission *><RLMPermission> *)array {
+    verifyInWriteTransaction(array.realm, _cmd);
+    auto index = [array indexOfObjectWhere:@"role = %@", role];
+    if (index != NSNotFound) {
+        return array[index];
+    }
+    RLMPermission *permission = [RLMPermission createInRealm:role.realm withValue:@[role]];
+    [array addObject:permission];
+    return permission;
+}
+
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName inArray:(RLMArray<RLMPermission *><RLMPermission> *)array {
+    auto realm = array.realm;
+    verifyInWriteTransaction(realm, _cmd);
+    auto role = [RLMPermissionRole createOrUpdateInRealm:realm withValue:@{@"name": roleName}];
+    return [self permissionForRole:role inArray:array];
+}
+
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName onRealm:(RLMRealm *)realm {
+    verifyInWriteTransaction(realm, _cmd);
+    return [self permissionForRoleNamed:roleName
+                                inArray:[RLMRealmPermission objectInRealm:realm].permissions];
+
+}
+
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName onClass:(Class)cls realm:(RLMRealm *)realm {
+    verifyInWriteTransaction(realm, _cmd);
+    return [self permissionForRoleNamed:roleName
+                                inArray:[RLMClassPermission objectInRealm:realm forClass:cls].permissions];
+}
+
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName onClassNamed:(NSString *)className realm:(RLMRealm *)realm {
+    verifyInWriteTransaction(realm, _cmd);
+    return [self permissionForRoleNamed:roleName
+                                inArray:[RLMClassPermission objectInRealm:realm forClassNamed:className].permissions];
+}
+
++ (RLMPermission *)permissionForRoleNamed:(NSString *)roleName onObject:(RLMObject *)object {
+    verifyInWriteTransaction(object.realm, _cmd);
+    for (RLMProperty *prop in object.objectSchema.properties) {
+        if (prop.array && [prop.objectClassName isEqualToString:@"RLMPermission"]) {
+            return [self permissionForRoleNamed:roleName
+                                        inArray:[object valueForKey:prop.name]];
+        }
+    }
+    @throw RLMException(@"Object %@ does not have a RLMArray<RLMPermission *> property.", object);
 }
 @end
 
