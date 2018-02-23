@@ -20,8 +20,10 @@
 
 #import "RLMArray.h"
 #import "RLMObjectSchema.h"
+#import "RLMRealm_Dynamic.h"
 #import "RLMSyncUtil_Private.hpp"
 #import "RLMUtil.hpp"
+#import "RLMResults.h"
 
 using namespace realm;
 
@@ -34,6 +36,49 @@ static void verifyInWriteTransaction(__unsafe_unretained RLMRealm *const realm, 
     if (!realm.inWriteTransaction) {
         @throw RLMException(@"Cannot call %@ outside of a write transaction.", NSStringFromSelector(sel));
     }
+}
+
+id RLMPermissionForRole(RLMArray *array, id role) {
+//    verifyInWriteTransaction(array.realm, _cmd);
+    RLMResults *filtered = [array objectsWhere:@"role.name = %@", [role name]];
+    RLMPermission *permission;
+    for (RLMPermission *p in filtered) {
+        if (permission == nil) {
+            permission = p;
+        }
+        // If there's more than one permission for the role, merge it into the first
+        // one and then delete it as otherwise revoking permissions won't actually work
+        else {
+            if (p.canRead && !permission.canRead) {
+                permission.canRead = true;
+            }
+            if (p.canUpdate && !permission.canUpdate) {
+                permission.canUpdate = true;
+            }
+            if (p.canDelete && !permission.canDelete) {
+                permission.canDelete = true;
+            }
+            if (p.canSetPermissions && !permission.canSetPermissions) {
+                permission.canSetPermissions = true;
+            }
+            if (p.canQuery && !permission.canQuery) {
+                permission.canQuery = true;
+            }
+            if (p.canCreate && !permission.canCreate) {
+                permission.canCreate = true;
+            }
+            if (p.canModifySchema && !permission.canModifySchema) {
+                permission.canModifySchema = true;
+            }
+            [array.realm deleteObject:p];
+        }
+    }
+    if (!permission) {
+        // Use the dynamic API to create the appropriate Permission class for the array
+        permission = (id)[array.realm createObject:array.objectClassName withValue:@[role]];
+        [array addObject:permission];
+    }
+    return permission;
 }
 
 @implementation RLMPermissionRole

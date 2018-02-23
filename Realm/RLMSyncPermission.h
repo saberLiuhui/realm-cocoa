@@ -308,6 +308,9 @@ struct RLMObjectPrivileges {
     bool setPermissions : 1;
 };
 
+/// :nodoc:
+FOUNDATION_EXTERN id RLMPermissionForRole(RLMArray *array, id role);
+
 /**
  Access levels which can be granted to Realm Mobile Platform users
  for specific synchronized Realms, using the permissions APIs.

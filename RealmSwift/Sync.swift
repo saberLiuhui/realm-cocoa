@@ -881,7 +881,7 @@ public class PermissionRole: Object {
     /// The name of the Role
     @objc dynamic public var name = ""
     /// The users which belong to the role
-    let users = List<PermissionUser>()
+    public let users = List<PermissionUser>()
 
     /// :nodoc:
     @objc override public class func _realmObjectName() -> String {
@@ -1216,5 +1216,15 @@ extension Realm {
     */
     public func getPrivileges(forClassNamed className: String) -> ClassPrivileges {
         return ClassPrivileges(rawValue: RLMGetComputedPermissions(rlmRealm, className))
+    }
+}
+
+extension List where Element == Permission {
+    /**
+    Returns the Permission object for the named Role in this List, creating it if needed.
+    */
+    public func findOrCreate(forRoleNamed roleName: String) -> Permission {
+        precondition(realm != nil, "Cannot be called on an unmanaged object")
+        return RLMPermissionForRole(_rlmArray, realm!.create(PermissionRole.self, value: [roleName], update: true)) as! Permission
     }
 }
